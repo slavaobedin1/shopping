@@ -129,7 +129,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);max-w
 <div class="content" id="content"></div>
 <div class="bottom-bar" id="bottomBar">
   <button class="btn-reset" onclick="resetAll()">🔄 שבוע חדש</button>
-  <button class="btn-pdf" id="btnPDF" onclick="tryPDF()">📝 צור רשימה</button>
+  <button class="btn-pdf" id="btnPDF" onclick="tryPDF()">📥 הורד רשימה</button>
 </div>
 <div class="toast" id="toast"></div>
 <script>
@@ -335,7 +335,7 @@ function renderReport(){
     <div class="pdf-hdr"><h2>📋 רשימת קניות מוכנה</h2><p>${document.getElementById('dateTag').textContent} · ${need.length} מוצרים לרכישה</p></div>
     <div class="pdf-body">
       ${rows}
-      <button class="btn-gen" onclick="openGoogleDoc()">📝 צור ברשימה בגוגל דוקס</button>
+      <button class="btn-gen" onclick="openGoogleDoc()">📥 הורד רשימה (TXT)</button>
     </div>
   </div>
   <div id="printDoc" style="display:none">
@@ -422,42 +422,37 @@ function openGoogleDoc(){
 
   if(!need.length){ showToast('🎉 אין מה לקנות השבוע!'); return; }
 
-  // בניית תוכן הדוק
-  let content = `רשימת קניות — ${date}\n\n`;
-  content += `סה"כ ${need.length} מוצרים לרכישה\n`;
-  content += `${'─'.repeat(30)}\n\n`;
+  let txt = `🛒 רשימת קניות — ${date}\n`;
+  txt += `${'═'.repeat(32)}\n\n`;
 
   Object.entries(groups).forEach(([cat,items])=>{
     const n=items.filter(i=>i.status==='no');
     if(!n.length) return;
-    content += `${cat}\n`;
+    txt += `${cat}\n`;
+    txt += `${'─'.repeat(26)}\n`;
     n.forEach(it=>{
-      content += `  □  ${it.name}`;
-      if(it.qty>1) content += `  (${it.qty} יח׳)`;
-      if(it.note) content += `  — ${it.note}`;
-      content += '\n';
+      txt += `  □  ${it.name}`;
+      if(it.qty>1) txt += `   (${it.qty} יח׳)`;
+      if(it.note) txt += `   — ${it.note}`;
+      txt += '\n';
     });
-    content += '\n';
+    txt += '\n';
   });
 
-  content += `${'─'.repeat(30)}\n`;
-  content += `נוצר ע"י אפליקציית קניות משפחתית`;
+  txt += `${'═'.repeat(32)}\n`;
+  txt += `סה"כ ${need.length} מוצרים לקנות\n`;
+  txt += `נוצר: ${date}`;
 
-  // פתיחת גוגל דוקס עם התוכן
-  const encoded = encodeURIComponent(content);
-  const url = `https://docs.google.com/document/create?title=רשימת קניות ${date}&body=${encoded}`;
-
-  // ניסיון ראשון — גוגל דוקס ישירות
-  // אם לא עובד, נפתח גוגל דרייב ליצירת דוק חדש
-  window.open('https://docs.new', '_blank');
-  showToast('📝 העתיקי את הרשימה לדוק!');
-
-  // העתקה ללוח
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(content).then(()=>{
-      showToast('✅ הרשימה הועתקה — הדבקי בדוק!');
-    });
-  }
+  const blob = new Blob(['\ufeff'+txt], {type:'text/plain;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `קניות-${date.replace(/[,\s\/]+/g,'-')}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✅ הקובץ הורד — שתפי בוואטסאפ!');
 }
 
 function printDoc(){ openGoogleDoc(); }
