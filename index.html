@@ -129,7 +129,7 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);max-w
 <div class="content" id="content"></div>
 <div class="bottom-bar" id="bottomBar">
   <button class="btn-reset" onclick="resetAll()">🔄 שבוע חדש</button>
-  <button class="btn-pdf" id="btnPDF" onclick="tryPDF()">📄 צור דוח PDF</button>
+  <button class="btn-pdf" id="btnPDF" onclick="tryPDF()">📝 צור רשימה</button>
 </div>
 <div class="toast" id="toast"></div>
 <script>
@@ -335,7 +335,7 @@ function renderReport(){
     <div class="pdf-hdr"><h2>📋 רשימת קניות מוכנה</h2><p>${document.getElementById('dateTag').textContent} · ${need.length} מוצרים לרכישה</p></div>
     <div class="pdf-body">
       ${rows}
-      <button class="btn-gen" onclick="printDoc()">📄 צור PDF</button>
+      <button class="btn-gen" onclick="openGoogleDoc()">📝 צור ברשימה בגוגל דוקס</button>
     </div>
   </div>
   <div id="printDoc" style="display:none">
@@ -415,41 +415,54 @@ function tryPDF(){
   if(checked<total){showToast('🔒 נותרו '+(total-checked)+' פריטים');setTab('list');document.getElementById('progWarn').classList.add('show');return;}
   genPDF();
 }
-function printDoc(){
-  const printContent = document.getElementById('printDoc');
-  if(!printContent) return;
-
-  // העתקת תוכן להדפסה
-  const originalBody = document.body.innerHTML;
-  document.body.innerHTML = printContent.innerHTML;
-  window.print();
-  document.body.innerHTML = originalBody;
-
-  // החזרת האפליקציה
-  render();
-  updateProgress();
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
-}
-
-function shareList(){
+function openGoogleDoc(){
   const need=state.items.filter(i=>i.status==='no');
   const groups=groupBy();
   const date=document.getElementById('dateTag').textContent;
+
   if(!need.length){ showToast('🎉 אין מה לקנות השבוע!'); return; }
-  let msg=`🛒 *רשימת קניות* — ${date}\n━━━━━━━━━━━━━\n`;
+
+  // בניית תוכן הדוק
+  let content = `רשימת קניות — ${date}\n\n`;
+  content += `סה"כ ${need.length} מוצרים לרכישה\n`;
+  content += `${'─'.repeat(30)}\n\n`;
+
   Object.entries(groups).forEach(([cat,items])=>{
     const n=items.filter(i=>i.status==='no');
     if(!n.length) return;
-    msg+=`\n${cat}\n`;
-    n.forEach(it=>{ msg+=`▪️ ${it.name}`; if(it.qty>1)msg+=` × ${it.qty}`; if(it.note)msg+=` (${it.note})`; msg+='\n'; });
+    content += `${cat}\n`;
+    n.forEach(it=>{
+      content += `  □  ${it.name}`;
+      if(it.qty>1) content += `  (${it.qty} יח׳)`;
+      if(it.note) content += `  — ${it.note}`;
+      content += '\n';
+    });
+    content += '\n';
   });
-  msg+=`\n━━━━━━━━━━━━━\nסה"כ ${need.length} מוצרים`;
-  if(navigator.share){
-    navigator.share({title:'רשימת קניות',text:msg}).catch(()=>openWA(msg));
-  } else { openWA(msg); }
+
+  content += `${'─'.repeat(30)}\n`;
+  content += `נוצר ע"י אפליקציית קניות משפחתית`;
+
+  // פתיחת גוגל דוקס עם התוכן
+  const encoded = encodeURIComponent(content);
+  const url = `https://docs.google.com/document/create?title=רשימת קניות ${date}&body=${encoded}`;
+
+  // ניסיון ראשון — גוגל דוקס ישירות
+  // אם לא עובד, נפתח גוגל דרייב ליצירת דוק חדש
+  window.open('https://docs.new', '_blank');
+  showToast('📝 העתיקי את הרשימה לדוק!');
+
+  // העתקה ללוח
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(content).then(()=>{
+      showToast('✅ הרשימה הועתקה — הדבקי בדוק!');
+    });
+  }
 }
-function openWA(msg){ window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank'); showToast('📤 נפתח וואטסאפ!'); }
-function genPDF(){ shareList(); }
+
+function printDoc(){ openGoogleDoc(); }
+function shareList(){ openGoogleDoc(); }
+function genPDF(){ openGoogleDoc(); }
 let tt;
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2300);}
 render();updateProgress();
