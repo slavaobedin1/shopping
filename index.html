@@ -122,14 +122,13 @@ body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);max-w
   <div class="prog-warn" id="progWarn">⚠️ יש לסמן את כל המוצרים לפני יצירת הדוח</div>
   <div class="tabs">
     <div class="tab active" id="tab-list"   onclick="setTab('list')">📋 רשימה</div>
-    <div class="tab"        id="tab-report" onclick="setTab('report')">📄 דוח PDF</div>
     <div class="tab"        id="tab-manage" onclick="setTab('manage')">⚙️ ניהול</div>
   </div>
 </div>
 <div class="content" id="content"></div>
 <div class="bottom-bar" id="bottomBar">
   <button class="btn-reset" onclick="resetAll()">🔄 שבוע חדש</button>
-  <button class="btn-pdf" id="btnPDF" onclick="tryPDF()">📥 הורד רשימה</button>
+  <button class="btn-pdf" id="btnShare" onclick="tryShare()">📲 שתף בוואטסאפ</button>
 </div>
 <div class="toast" id="toast"></div>
 <script>
@@ -221,19 +220,18 @@ function updateProgress(){
   document.getElementById('progFill').style.width=pct+'%';
   const done=checked===total;
   document.getElementById('progWarn').classList.toggle('show',!done&&checked>0);
-  const btn=document.getElementById('btnPDF');
-  if(btn){btn.disabled=!done;btn.textContent=done?'📄 צור דוח PDF':'🔒 נותרו '+(total-checked);}
+  const btn=document.getElementById('btnShare');
+  if(btn){btn.disabled=!done;btn.textContent=done?'📲 שתף בוואטסאפ':'🔒 נותרו '+(total-checked);}
 }
 function setTab(t){
   tab=t;
-  ['list','report','manage'].forEach(x=>document.getElementById('tab-'+x).classList.toggle('active',x===t));
+  ['list','manage'].forEach(x=>document.getElementById('tab-'+x).classList.toggle('active',x===t));
   document.getElementById('bottomBar').style.display=t==='manage'?'none':'flex';
   render();
 }
 function render(){
   const el=document.getElementById('content');
   if(tab==='list')el.innerHTML=renderList();
-  else if(tab==='report')el.innerHTML=renderReport();
   else el.innerHTML=renderManage();
 }
 function groupBy(){const g={};state.items.forEach(i=>{if(!g[i.cat])g[i.cat]=[];g[i.cat].push(i);});return g;}
@@ -409,55 +407,46 @@ function resetAll(){
   if(!confirm('לאפס את כל הסימונים לשבוע חדש?'))return;
   state.items.forEach(i=>i.status='unchecked');save();render();showToast('🔄 הרשימה אופסה');
 }
-function tryPDF(){
+function tryShare(){
   const total=state.items.length;
   const checked=state.items.filter(i=>i.status!=='unchecked').length;
-  if(checked<total){showToast('🔒 נותרו '+(total-checked)+' פריטים');setTab('list');document.getElementById('progWarn').classList.add('show');return;}
-  genPDF();
+  if(checked<total){showToast('🔒 נותרו '+(total-checked)+' פריטים לא מסומנים');document.getElementById('progWarn').classList.add('show');return;}
+  shareWA();
 }
-function openGoogleDoc(){
+function tryPDF(){ tryShare(); }
+function shareWA(){
   const need=state.items.filter(i=>i.status==='no');
   const groups=groupBy();
   const date=document.getElementById('dateTag').textContent;
-
   if(!need.length){ showToast('🎉 אין מה לקנות השבוע!'); return; }
 
-  let txt = `🛒 רשימת קניות — ${date}\n`;
-  txt += `${'═'.repeat(32)}\n\n`;
+  let msg=`🛒 *רשימת קניות* — ${date}\n`;
+  msg+=`סה"כ ${need.length} מוצרים לקנות\n`;
+  msg+=`${'─'.repeat(22)}\n`;
 
   Object.entries(groups).forEach(([cat,items])=>{
     const n=items.filter(i=>i.status==='no');
     if(!n.length) return;
-    txt += `${cat}\n`;
-    txt += `${'─'.repeat(26)}\n`;
+    msg+=`\n*${cat}*\n`;
     n.forEach(it=>{
-      txt += `  □  ${it.name}`;
-      if(it.qty>1) txt += `   (${it.qty} יח׳)`;
-      if(it.note) txt += `   — ${it.note}`;
-      txt += '\n';
+      msg+=`□ ${it.name}`;
+      if(it.qty>1) msg+=` ×${it.qty}`;
+      if(it.note) msg+=` _(${it.note})_`;
+      msg+='\n';
     });
-    txt += '\n';
   });
 
-  txt += `${'═'.repeat(32)}\n`;
-  txt += `סה"כ ${need.length} מוצרים לקנות\n`;
-  txt += `נוצר: ${date}`;
+  msg+=`\n${'─'.repeat(22)}\n`;
+  msg+=`_אפליקציית קניות משפחתית_`;
 
-  const blob = new Blob(['\ufeff'+txt], {type:'text/plain;charset=utf-8'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `קניות-${date.replace(/[,\s\/]+/g,'-')}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('✅ הקובץ הורד — שתפי בוואטסאפ!');
+  const url='https://wa.me/?text='+encodeURIComponent(msg);
+  window.open(url,'_blank');
+  showToast('📲 נפתח וואטסאפ!');
 }
 
-function printDoc(){ openGoogleDoc(); }
-function shareList(){ openGoogleDoc(); }
-function genPDF(){ openGoogleDoc(); }
+function openGoogleDoc(){ shareWA(); }
+function shareList(){ shareWA(); }
+function genPDF(){ shareWA(); }
 let tt;
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2300);}
 render();updateProgress();
