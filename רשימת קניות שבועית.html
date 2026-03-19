@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="קניות">
+<meta name="theme-color" content="#5b3e8f">
+<title>🛒 רשימת קניות</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f0e8;--surface:#fff;--surface2:#faf7f2;--border:#e8e0d0;--text:#1a1410;--muted:#8a7d6b;--green:#2d7a4f;--green-l:#e8f5ee;--red:#c0392b;--red-l:#fdf0ee;--yellow:#d4830a;--yellow-l:#fef9ee;--gray:#6b7280;--gray-l:#f3f4f6;--accent:#5b3e8f;--accent-l:#f0ecfa;--shadow:0 2px 16px rgba(0,0,0,.08);--radius:14px;--radius-sm:10px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Heebo',sans-serif;background:var(--bg);color:var(--text);max-width:430px;margin:0 auto;min-height:100vh}
+.header{background:var(--surface);border-bottom:2px solid var(--border);padding:16px 16px 0;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.logo{font-size:19px;font-weight:900;letter-spacing:-.5px}
+.logo span{color:var(--accent)}
+.date-tag{background:var(--accent-l);color:var(--accent);border-radius:20px;padding:4px 11px;font-size:11px;font-weight:700}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:5px}
+.prog-count{font-weight:800;color:var(--accent)}
+.progress-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px;transition:width .4s}
+.prog-warn{font-size:11px;color:var(--yellow);font-weight:700;padding:4px 0 6px;text-align:center;opacity:0;transition:opacity .3s}
+.prog-warn.show{opacity:1}
+.tabs{display:flex;margin-top:8px}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.content{padding:14px 12px 110px}
+.cat-block{margin-bottom:12px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.cat-header{display:flex;align-items:center;gap:8px;padding:11px 13px;background:var(--surface);cursor:pointer;user-select:none;border-bottom:1px solid var(--border)}
+.cat-emoji{font-size:18px}
+.cat-title{font-size:14px;font-weight:800;flex:1}
+.cat-badges{display:flex;gap:5px;flex-wrap:wrap}
+.cat-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.b-done{background:var(--green-l);color:var(--green)}
+.b-skip{background:var(--gray-l);color:var(--gray)}
+.b-need{background:var(--red-l);color:var(--red)}
+.b-left{background:var(--yellow-l);color:var(--yellow)}
+.cat-chev{font-size:10px;color:var(--muted);transition:transform .2s}
+.cat-header.open .cat-chev{transform:rotate(180deg)}
+.item{display:flex;align-items:center;gap:9px;padding:10px 13px;background:var(--surface);border-bottom:1px solid var(--border);transition:background .12s}
+.item:last-child{border-bottom:none}
+.item.s-yes{background:var(--green-l)}
+.item.s-no{background:var(--red-l)}
+.item.s-skip{background:var(--gray-l);opacity:.6}
+.status-btn{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .12s;font-family:'Heebo',sans-serif;font-weight:800}
+.status-btn.yes{border-color:var(--green);background:var(--green);color:#fff}
+.status-btn.no{border-color:var(--red);background:var(--red);color:#fff}
+.status-btn.skip{border-color:var(--gray);background:var(--gray);color:#fff;font-size:10px}
+.item-info{flex:1;min-width:0}
+.item-name{font-size:13px;font-weight:700}
+.item-sub{font-size:11px;color:var(--muted)}
+.status-label{font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.sl-yes{background:var(--green-l);color:var(--green)}
+.sl-no{background:var(--red-l);color:var(--red)}
+.sl-skip{background:var(--gray-l);color:var(--gray)}
+.sl-unk{background:var(--yellow-l);color:var(--yellow)}
+.qty-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.qty-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.qty-num{font-size:14px;font-weight:800;min-width:20px;text-align:center}
+.legend{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:12px}
+.legend-title{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px}
+.legend-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--muted)}
+.ld{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0;font-weight:800}
+.ld-unk{background:var(--border);color:var(--muted)}
+.ld-yes{background:var(--green)}
+.ld-no{background:var(--red)}
+.ld-skip{background:var(--gray);font-size:9px}
+.pdf-locked{background:var(--surface);border:2px dashed var(--border);border-radius:var(--radius);padding:30px 20px;text-align:center}
+.lock-icon{font-size:42px;margin-bottom:10px}
+.pdf-locked h3{font-size:16px;font-weight:800;color:var(--muted);margin-bottom:8px}
+.pdf-locked p{font-size:13px;color:var(--muted);line-height:1.7}
+.items-left{display:inline-block;margin-top:12px;background:var(--yellow-l);color:var(--yellow);border-radius:20px;padding:6px 18px;font-size:13px;font-weight:800}
+.pdf-unlocked{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.pdf-hdr{background:linear-gradient(135deg,var(--accent),#7b5ea7);padding:18px;color:#fff}
+.pdf-hdr h2{font-size:18px;font-weight:900;margin-bottom:3px}
+.pdf-hdr p{font-size:12px;opacity:.8}
+.pdf-body{padding:14px}
+.pdf-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:6px}
+.pr-need{background:var(--red-l)}
+.pr-ok{background:var(--green-l)}
+.pr-skip{background:var(--gray-l);opacity:.7}
+.pr-name{font-size:13px;font-weight:700}
+.pr-count{font-size:12px;font-weight:800}
+.pr-need .pr-count{color:var(--red)}
+.pr-ok .pr-count{color:var(--green)}
+.pr-skip .pr-count{color:var(--gray)}
+.btn-gen{width:100%;margin-top:14px;background:linear-gradient(135deg,var(--accent),#7b5ea7);color:#fff;border:none;border-radius:var(--radius-sm);padding:15px;font-family:'Heebo',sans-serif;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 20px rgba(91,62,143,.3);display:flex;align-items:center;justify-content:center;gap:8px}
+.add-form{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.add-form h3{font-size:14px;font-weight:800;margin-bottom:10px}
+.form-group{margin-bottom:8px}
+.form-label{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:3px;display:block}
+.form-input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;outline:none;direction:rtl;transition:border .2s}
+.form-input:focus{border-color:var(--accent)}
+.form-select{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:'Heebo',sans-serif;font-size:13px;font-weight:600;outline:none;direction:rtl}
+.btn-add{width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px;font-weight:800;font-family:'Heebo',sans-serif;font-size:14px;cursor:pointer}
+.manage-item{display:flex;align-items:center;gap:9px;padding:9px 13px;background:var(--surface);border-bottom:1px solid var(--border)}
+.manage-item:last-child{border-bottom:none}
+.manage-name{flex:1;font-size:12px;font-weight:600}
+.btn-del{background:var(--red-l);border:1px solid var(--red);border-radius:6px;color:var(--red);padding:3px 9px;font-size:11px;cursor:pointer;font-family:'Heebo',sans-serif;font-weight:700}
+.bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--surface);border-top:1.5px solid var(--border);padding:10px 14px;display:flex;gap:8px;box-shadow:0 -4px 20px rgba(0,0,0,.08);z-index:50}
+.btn-reset{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px;color:var(--muted);font-family:'Heebo',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.btn-pdf{flex:2;background:linear-gradient(135deg,var(--accent),#7b5ea7);color:#fff;border:none;border-radius:10px;padding:11px;font-family:'Heebo',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(91,62,143,.3)}
+.btn-pdf:disabled{background:#ccc;box-shadow:none;cursor:not-allowed}
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--text);color:#fff;border-radius:10px;padding:9px 18px;font-size:12px;font-weight:700;opacity:0;transition:all .25s;pointer-events:none;z-index:300;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div class="logo">🛒 קניות <span>משפחתיות</span></div>
+    <div class="date-tag" id="dateTag"></div>
+  </div>
+  <div class="progress-label"><span>התקדמות בדיקה</span><span class="prog-count" id="progText">0 / 0</span></div>
+  <div class="progress-bar"><div class="progress-fill" id="progFill" style="width:0%"></div></div>
+  <div class="prog-warn" id="progWarn">⚠️ יש לסמן את כל המוצרים לפני יצירת הדוח</div>
+  <div class="tabs">
+    <div class="tab active" id="tab-list"   onclick="setTab('list')">📋 רשימה</div>
+    <div class="tab"        id="tab-report" onclick="setTab('report')">📄 דוח PDF</div>
+    <div class="tab"        id="tab-manage" onclick="setTab('manage')">⚙️ ניהול</div>
+  </div>
+</div>
+<div class="content" id="content"></div>
+<div class="bottom-bar" id="bottomBar">
+  <button class="btn-reset" onclick="resetAll()">🔄 שבוע חדש</button>
+  <button class="btn-pdf" id="btnPDF" onclick="tryPDF()">📄 צור דוח PDF</button>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const DEFAULTS=[
+  {cat:'🥬 ירקות ופירות',name:'עגבניה',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'מלפפון',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'גמבה',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'בצל',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'בצל סגול',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'תפוח אדמה',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'אבוקדו',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'בננה',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'פלפל חריף',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'גזר',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'פטריות',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'חסה',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'שום',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'לימון',qty:1,note:''},
+  {cat:'🥬 ירקות ופירות',name:'אספרגוס',qty:1,note:''},
+  {cat:'🥛 מוצרי חלב',name:'חלב 3% עשיר סידן',qty:1,note:''},
+  {cat:'🥛 מוצרי חלב',name:'יוגורטים לסלבה',qty:1,note:''},
+  {cat:'🥛 מוצרי חלב',name:'משקה חלבון לסלבה',qty:1,note:''},
+  {cat:'🥛 מוצרי חלב',name:'קוטג׳ קטן',qty:1,note:''},
+  {cat:'🥛 מוצרי חלב',name:'שמנת למריחה לעומר',qty:1,note:''},
+  {cat:'🥛 מוצרי חלב',name:'גבינה צהובה',qty:1,note:''},
+  {cat:'🍞 לחם ומאפים',name:'לחמניות',qty:1,note:''},
+  {cat:'🍞 לחם ומאפים',name:'פירכיות',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'טונה',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'עגבניות מרוסקות',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'רסק עגבניות',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'אורז',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'פסטה',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'פתיתים',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'קוסמת',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'איטריות ביצים',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'חמאת בוטנים',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'חמאת שקדים',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'מיונז',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'פסטרמה',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'טחינה',qty:1,note:''},
+  {cat:'🥫 שימורים ויבשים',name:'ירקות קפואים',qty:1,note:''},
+  {cat:'🍫 חטיפים ושתייה',name:'במבה',qty:1,note:''},
+  {cat:'🍫 חטיפים ושתייה',name:'קפה',qty:1,note:''},
+  {cat:'🍫 חטיפים ושתייה',name:'חטיפי בוקר לעומר',qty:1,note:''},
+  {cat:'🍫 חטיפים ושתייה',name:'קורנפלקס לעומר',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'קפסולות למדיח',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'נייר טואלט',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'קפסולות לכביסה',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'נוזל כלים',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'שקיות אשפה',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'סבון ידיים',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'נייר סופג',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'אקונומיקה',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'כפפות',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'נייר אלומיניום',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'שקיות אוכל',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'נייר נצמד',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'משחת שיניים',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'כוסות חד פעמי',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'שמפו',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'סבון גוף',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'דיאודורנט',qty:1,note:''},
+  {cat:'🧴 ניקיון ותברואה',name:'סכיני גילוח',qty:1,note:''},
+  {cat:'👶 קליאו',name:'חיתולים',qty:1,note:''},
+  {cat:'👶 קליאו',name:'מגבונים',qty:1,note:''},
+  {cat:'👶 קליאו',name:'משפחה לטוכס',qty:1,note:''},
+  {cat:'🧂 תבלינים',name:'מלח',qty:1,note:''},
+  {cat:'🧂 תבלינים',name:'פלפל שחור טחון',qty:1,note:''},
+  {cat:'🧂 תבלינים',name:'פפריקה',qty:1,note:''},
+  {cat:'🧂 תבלינים',name:'כמון',qty:1,note:''},
+  {cat:'🧂 תבלינים',name:'כורכום',qty:1,note:''},
+  {cat:'🧂 תבלינים',name:'אורגנו',qty:1,note:''},
+  {cat:'🧂 תבלינים',name:'תבלין שווארמה',qty:1,note:''},
+  {cat:'🧂 תבלינים',name:'סוכר חום',qty:1,note:''},
+];
+const KEY='shopping_v4';
+function loadState(){try{const s=localStorage.getItem(KEY);if(s)return JSON.parse(s);}catch(e){}return{items:DEFAULTS.map((d,i)=>({...d,id:'i'+i,status:'unchecked'})),catCollapsed:{}};}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));updateProgress();}
+let state=loadState();
+let tab='list';
+const days=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const d=new Date();
+document.getElementById('dateTag').textContent=`יום ${days[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}`;
+function updateProgress(){
+  const total=state.items.length;
+  const checked=state.items.filter(i=>i.status!=='unchecked').length;
+  const pct=total?Math.round(checked/total*100):0;
+  document.getElementById('progText').textContent=checked+' / '+total;
+  document.getElementById('progFill').style.width=pct+'%';
+  const done=checked===total;
+  document.getElementById('progWarn').classList.toggle('show',!done&&checked>0);
+  const btn=document.getElementById('btnPDF');
+  if(btn){btn.disabled=!done;btn.textContent=done?'📄 צור דוח PDF':'🔒 נותרו '+(total-checked);}
+}
+function setTab(t){
+  tab=t;
+  ['list','report','manage'].forEach(x=>document.getElementById('tab-'+x).classList.toggle('active',x===t));
+  document.getElementById('bottomBar').style.display=t==='manage'?'none':'flex';
+  render();
+}
+function render(){
+  const el=document.getElementById('content');
+  if(tab==='list')el.innerHTML=renderList();
+  else if(tab==='report')el.innerHTML=renderReport();
+  else el.innerHTML=renderManage();
+}
+function groupBy(){const g={};state.items.forEach(i=>{if(!g[i.cat])g[i.cat]=[];g[i.cat].push(i);});return g;}
+function esc(s){return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function renderList(){
+  let html=`<div class="legend">
+    <div class="legend-title">לחצי על הכפתור העגול כדי לסמן כל מוצר:</div>
+    <div class="legend-grid">
+      <div class="legend-item"><div class="ld ld-unk">?</div><span>לא נבדק</span></div>
+      <div class="legend-item"><div class="ld ld-yes">✓</div><span>יש בבית</span></div>
+      <div class="legend-item"><div class="ld ld-no">✗</div><span>חסר — לקנות</span></div>
+      <div class="legend-item"><div class="ld ld-skip">דלג</div><span>השבוע לא</span></div>
+    </div>
+  </div>`;
+  const groups=groupBy();
+  Object.entries(groups).forEach(([cat,items])=>{
+    const done=items.filter(i=>i.status!=='unchecked').length;
+    const need=items.filter(i=>i.status==='no').length;
+    const skip=items.filter(i=>i.status==='skip').length;
+    const total=items.length;
+    const isOpen=!state.catCollapsed[cat];
+    html+=`<div class="cat-block">
+      <div class="cat-header ${isOpen?'open':''}" onclick="toggleCat('${esc(cat)}')">
+        <span class="cat-emoji">${cat.split(' ')[0]}</span>
+        <span class="cat-title">${cat.split(' ').slice(1).join(' ')}</span>
+        <div class="cat-badges">
+          <span class="cat-badge b-done">${done}/${total}</span>
+          ${need>0?`<span class="cat-badge b-need">${need} חסר</span>`:''}
+          ${skip>0?`<span class="cat-badge b-skip">${skip} דולג</span>`:''}
+          ${done<total?`<span class="cat-badge b-left">${total-done} נותרו</span>`:''}
+        </div>
+        <span class="cat-chev">${isOpen?'▲':'▼'}</span>
+      </div>
+      ${isOpen?`<div>${items.map(renderItem).join('')}</div>`:''}
+    </div>`;
+  });
+  return html;
+}
+function renderItem(item){
+  const sc=item.status;
+  const cls=sc==='yes'?'s-yes':sc==='no'?'s-no':sc==='skip'?'s-skip':'';
+  const bc=sc==='yes'?'yes':sc==='no'?'no':sc==='skip'?'skip':'';
+  const bi=sc==='yes'?'✓':sc==='no'?'✗':sc==='skip'?'דלג':'?';
+  const sl=sc==='yes'?'sl-yes':sc==='no'?'sl-no':sc==='skip'?'sl-skip':'sl-unk';
+  const st=sc==='yes'?'יש ✓':sc==='no'?'לקנות':sc==='skip'?'השבוע לא':'לא נבדק';
+  return `<div class="item ${cls}">
+    <button class="status-btn ${bc}" onclick="cycle('${item.id}')">${bi}</button>
+    <div class="item-info">
+      <div class="item-name">${item.name}</div>
+      ${item.note?`<div class="item-sub">${item.note}</div>`:''}
+    </div>
+    <span class="status-label ${sl}">${st}</span>
+    <div class="qty-wrap">
+      <button class="qty-btn" onclick="chQty('${item.id}',-1)">−</button>
+      <span class="qty-num">${item.qty}</span>
+      <button class="qty-btn" onclick="chQty('${item.id}',1)">+</button>
+    </div>
+  </div>`;
+}
+function renderReport(){
+  const total=state.items.length;
+  const checked=state.items.filter(i=>i.status!=='unchecked').length;
+  if(checked<total){
+    return `<div class="pdf-locked">
+      <div class="lock-icon">🔒</div>
+      <h3>הדוח נעול</h3>
+      <p>יש לסמן <strong>כל המוצרים</strong> ברשימה<br>(יש בבית / חסר / השבוע לא)<br>לפני שניתן לייצא דוח.</p>
+      <div class="items-left">נותרו ${total-checked} פריטים לא מסומנים</div>
+    </div>`;
+  }
+  const need=state.items.filter(i=>i.status==='no');
+  const groups=groupBy();
+  let rows='';
+  Object.entries(groups).forEach(([cat,items])=>{
+    const n=items.filter(i=>i.status==='no').length;
+    const s=items.filter(i=>i.status==='skip').length;
+    const allSkip=s===items.length;
+    const cls=n>0?'pr-need':allSkip?'pr-skip':'pr-ok';
+    const label=n>0?n+' לקנות':allSkip?'דולג השבוע':'✓ יש הכל';
+    rows+=`<div class="pdf-row ${cls}"><span class="pr-name">${cat}</span><span class="pr-count">${label}</span></div>`;
+  });
+  return `<div class="pdf-unlocked">
+    <div class="pdf-hdr"><h2>📋 רשימת קניות מוכנה</h2><p>${document.getElementById('dateTag').textContent} · ${need.length} מוצרים לרכישה</p></div>
+    <div class="pdf-body">${rows}<button class="btn-gen" onclick="genPDF()">📥 הורד PDF לשליחה</button></div>
+  </div>`;
+}
+function renderManage(){
+  const catOpts=[...new Set(DEFAULTS.map(i=>i.cat))].map(c=>`<option value="${c}">${c}</option>`).join('');
+  const groups=groupBy();
+  let blocks='';
+  Object.entries(groups).forEach(([cat,items])=>{
+    blocks+=`<div class="cat-block">
+      <div class="cat-header open" style="cursor:default">
+        <span class="cat-emoji">${cat.split(' ')[0]}</span>
+        <span class="cat-title">${cat.split(' ').slice(1).join(' ')}</span>
+      </div>
+      <div>${items.map(i=>`<div class="manage-item"><span class="manage-name">${i.name}${i.note?' · '+i.note:''}</span><button class="btn-del" onclick="removeItem('${i.id}')">מחק</button></div>`).join('')}</div>
+    </div>`;
+  });
+  return `<div class="add-form">
+    <h3>➕ הוסף מוצר</h3>
+    <div class="form-group"><label class="form-label">שם המוצר</label><input class="form-input" id="nName" placeholder="שם המוצר"/></div>
+    <div class="form-group"><label class="form-label">קטגוריה</label><select class="form-select" id="nCat">${catOpts}</select></div>
+    <div class="form-group"><label class="form-label">הערה (אופציונלי)</label><input class="form-input" id="nNote" placeholder="כמות, מותג..."/></div>
+    <button class="btn-add" onclick="addItem()">➕ הוסף</button>
+  </div>
+  <div style="margin-bottom:8px"><div style="font-size:12px;font-weight:800;color:var(--muted);padding:0 2px 8px">כל המוצרים (${state.items.length})</div>${blocks}</div>`;
+}
+function toggleCat(cat){state.catCollapsed[cat]=!state.catCollapsed[cat];save();render();}
+function cycle(id){
+  const item=state.items.find(i=>i.id===id);if(!item)return;
+  const nxt={unchecked:'yes',yes:'no',no:'skip',skip:'unchecked'};
+  item.status=nxt[item.status];save();
+  const msgs={yes:'✅ '+item.name+' — יש בבית',no:'🛒 '+item.name+' — לקנות',skip:'⏭️ '+item.name+' — השבוע לא',unchecked:'↩️ '+item.name+' — לא מסומן'};
+  showToast(msgs[item.status]);render();
+}
+function chQty(id,delta){const item=state.items.find(i=>i.id===id);if(!item)return;item.qty=Math.max(1,item.qty+delta);save();render();}
+function addItem(){
+  const name=document.getElementById('nName').value.trim();
+  const cat=document.getElementById('nCat').value;
+  const note=document.getElementById('nNote').value.trim();
+  if(!name){showToast('⚠️ יש להזין שם');return;}
+  state.items.push({id:'i'+Date.now(),cat,name,qty:1,note,status:'unchecked'});
+  save();render();showToast('✅ '+name+' נוסף');
+}
+function removeItem(id){
+  const item=state.items.find(i=>i.id===id);
+  if(!item||!confirm('למחוק "'+item.name+'"?'))return;
+  state.items=state.items.filter(i=>i.id!==id);save();render();
+}
+function resetAll(){
+  if(!confirm('לאפס את כל הסימונים לשבוע חדש?'))return;
+  state.items.forEach(i=>i.status='unchecked');save();render();showToast('🔄 הרשימה אופסה');
+}
+function tryPDF(){
+  const total=state.items.length;
+  const checked=state.items.filter(i=>i.status!=='unchecked').length;
+  if(checked<total){showToast('🔒 נותרו '+(total-checked)+' פריטים');setTab('list');document.getElementById('progWarn').classList.add('show');return;}
+  genPDF();
+}
+function genPDF(){
+  const need=state.items.filter(i=>i.status==='no');
+  const groups=groupBy();
+  const date=document.getElementById('dateTag').textContent;
+  let body='';
+  if(!need.length){body='<div style="text-align:center;padding:32px;color:#2d7a4f;font-size:18px;font-weight:800">🎉 יש הכל בבית! אין מה לקנות השבוע</div>';}
+  else{
+    Object.entries(groups).forEach(([cat,items])=>{
+      const n=items.filter(i=>i.status==='no');
+      if(!n.length)return;
+      body+=`<div style="margin-bottom:20px">
+        <div style="font-size:15px;font-weight:800;color:#5b3e8f;border-bottom:2px solid #e8e0d0;padding-bottom:6px;margin-bottom:8px">${cat}</div>
+        <table style="width:100%;border-collapse:collapse">
+          <tr style="background:#f5f0e8">
+            <th style="text-align:right;padding:6px 10px;font-size:11px;color:#8a7d6b;font-weight:700">מוצר</th>
+            <th style="text-align:center;padding:6px 10px;font-size:11px;color:#8a7d6b;font-weight:700;width:50px">כמות</th>
+            <th style="text-align:center;padding:6px 10px;font-size:11px;color:#8a7d6b;font-weight:700;width:50px">✓</th>
+          </tr>
+          ${n.map((it,idx)=>`<tr style="background:${idx%2?'#faf7f2':'#fff'}">
+            <td style="padding:8px 10px;font-size:13px;font-weight:700">${it.name}${it.note?' <span style="color:#8a7d6b;font-size:11px">'+it.note+'</span>':''}</td>
+            <td style="padding:8px 10px;text-align:center;font-size:14px;font-weight:800;color:#5b3e8f">${it.qty}</td>
+            <td style="padding:8px 10px;text-align:center"><div style="width:16px;height:16px;border:2px solid #ccc;border-radius:3px;margin:0 auto"></div></td>
+          </tr>`).join('')}
+        </table>
+      </div>`;
+    });
+  }
+  const win=window.open('','_blank','width=680,height=860');
+  win.document.write(`<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>body{font-family:'Heebo',Arial,sans-serif;background:#f5f0e8;margin:0;padding:18px}.np{text-align:center;margin-bottom:14px}@media print{body{background:#fff;padding:0}.np{display:none}}</style>
+  </head><body>
+  <div class="np">
+    <button onclick="window.print()" style="background:#5b3e8f;color:#fff;border:none;padding:10px 26px;border-radius:8px;font-family:Heebo,Arial;font-size:14px;font-weight:800;cursor:pointer;margin-left:8px">🖨️ שמור / הדפס PDF</button>
+    <button onclick="window.close()" style="background:#f5f0e8;color:#8a7d6b;border:1px solid #e8e0d0;padding:10px 18px;border-radius:8px;font-family:Heebo,Arial;font-size:14px;font-weight:700;cursor:pointer">סגור</button>
+  </div>
+  <div style="font-family:'Heebo',Arial,sans-serif;direction:rtl;padding:20px;color:#1a1410;max-width:560px;margin:0 auto">
+    <div style="background:linear-gradient(135deg,#5b3e8f,#7b5ea7);color:#fff;border-radius:12px;padding:18px 22px;margin-bottom:22px">
+      <h1 style="font-size:20px;font-weight:900;margin:0 0 4px">🛒 רשימת קניות</h1>
+      <p style="font-size:12px;opacity:.8;margin:0">${date} · ${need.length} מוצרים לרכישה</p>
+    </div>
+    ${body}
+    <div style="margin-top:22px;padding:12px;background:#f0ecfa;border-radius:10px;text-align:center">
+      <p style="font-size:11px;color:#8a7d6b;margin:0">נוצר ע"י אפליקציית קניות משפחתית · ${date}</p>
+    </div>
+  </div></body></html>`);
+  win.document.close();
+  showToast('📄 הדוח נפתח — לחצי הדפס/PDF');
+}
+let tt;
+function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2300);}
+render();updateProgress();
+</script>
+</body>
+</html>
