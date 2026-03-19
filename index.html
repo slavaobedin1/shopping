@@ -315,9 +315,50 @@ function renderReport(){
     const label=n>0?n+' לקנות':allSkip?'דולג השבוע':'✓ יש הכל';
     rows+=`<div class="pdf-row ${cls}"><span class="pr-name">${cat}</span><span class="pr-count">${label}</span></div>`;
   });
+
+  // בניית תצוגת הרשימה המלאה להדפסה
+  let printRows='';
+  Object.entries(groups).forEach(([cat,items])=>{
+    const n=items.filter(i=>i.status==='no');
+    if(!n.length) return;
+    printRows+=`<div class="p-cat">${cat}</div>`;
+    n.forEach(it=>{
+      printRows+=`<div class="p-item">
+        <span>${it.name}${it.note?' <small>('+it.note+')</small>':''}</span>
+        <span class="p-qty">${it.qty} יח׳</span>
+        <span class="p-check"></span>
+      </div>`;
+    });
+  });
+
   return `<div class="pdf-unlocked">
     <div class="pdf-hdr"><h2>📋 רשימת קניות מוכנה</h2><p>${document.getElementById('dateTag').textContent} · ${need.length} מוצרים לרכישה</p></div>
-    <div class="pdf-body">${rows}<button class="btn-gen" onclick="genPDF()">📥 הורד PDF לשליחה</button></div>
+    <div class="pdf-body">
+      ${rows}
+      <button class="btn-gen" onclick="printDoc()">📄 צור PDF</button>
+    </div>
+  </div>
+  <div id="printDoc" style="display:none">
+    <style>
+      #printDoc { direction:rtl; font-family:Arial,sans-serif; padding:20px; }
+      .p-title { background:linear-gradient(135deg,#5b3e8f,#7b5ea7); color:#fff; border-radius:10px; padding:16px 20px; margin-bottom:20px; }
+      .p-title h1 { font-size:20px; font-weight:900; margin:0 0 4px; }
+      .p-title p  { font-size:12px; opacity:.8; margin:0; }
+      .p-cat  { font-size:14px; font-weight:800; color:#5b3e8f; border-bottom:2px solid #e8e0d0; padding:8px 0 4px; margin:14px 0 6px; }
+      .p-item { display:flex; align-items:center; padding:7px 10px; border-bottom:1px solid #f0ece4; gap:8px; }
+      .p-item:nth-child(even) { background:#faf7f2; }
+      .p-item span:first-child { flex:1; font-size:13px; font-weight:600; }
+      .p-item small { color:#8a7d6b; font-size:11px; }
+      .p-qty  { font-size:13px; font-weight:800; color:#5b3e8f; min-width:40px; text-align:center; }
+      .p-check { width:20px; height:20px; border:2px solid #ccc; border-radius:4px; flex-shrink:0; }
+      .p-footer { margin-top:20px; padding:10px; background:#f0ecfa; border-radius:8px; text-align:center; font-size:11px; color:#8a7d6b; }
+    </style>
+    <div class="p-title">
+      <h1>🛒 רשימת קניות</h1>
+      <p>${document.getElementById('dateTag').textContent} · ${need.length} מוצרים לרכישה</p>
+    </div>
+    ${printRows}
+    <div class="p-footer">נוצר ע"י אפליקציית קניות משפחתית</div>
   </div>`;
 }
 function renderManage(){
@@ -374,62 +415,41 @@ function tryPDF(){
   if(checked<total){showToast('🔒 נותרו '+(total-checked)+' פריטים');setTab('list');document.getElementById('progWarn').classList.add('show');return;}
   genPDF();
 }
-function genPDF(){
+function printDoc(){
+  const printContent = document.getElementById('printDoc');
+  if(!printContent) return;
+
+  // העתקת תוכן להדפסה
+  const originalBody = document.body.innerHTML;
+  document.body.innerHTML = printContent.innerHTML;
+  window.print();
+  document.body.innerHTML = originalBody;
+
+  // החזרת האפליקציה
+  render();
+  updateProgress();
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
+}
+
+function shareList(){
   const need=state.items.filter(i=>i.status==='no');
   const groups=groupBy();
   const date=document.getElementById('dateTag').textContent;
-  let body='';
-  if(!need.length){body='<div style="text-align:center;padding:32px;color:#2d7a4f;font-size:18px;font-weight:800">🎉 יש הכל בבית! אין מה לקנות השבוע</div>';}
-  else{
-    Object.entries(groups).forEach(([cat,items])=>{
-      const n=items.filter(i=>i.status==='no');
-      if(!n.length)return;
-      body+=`<div style="margin-bottom:20px">
-        <div style="font-size:15px;font-weight:800;color:#5b3e8f;border-bottom:2px solid #e8e0d0;padding-bottom:6px;margin-bottom:8px">${cat}</div>
-        <table style="width:100%;border-collapse:collapse">
-          <tr style="background:#f5f0e8">
-            <th style="text-align:right;padding:6px 10px;font-size:11px;color:#8a7d6b;font-weight:700">מוצר</th>
-            <th style="text-align:center;padding:6px 10px;font-size:11px;color:#8a7d6b;font-weight:700;width:50px">כמות</th>
-            <th style="text-align:center;padding:6px 10px;font-size:11px;color:#8a7d6b;font-weight:700;width:50px">✓</th>
-          </tr>
-          ${n.map((it,idx)=>`<tr style="background:${idx%2?'#faf7f2':'#fff'}">
-            <td style="padding:8px 10px;font-size:13px;font-weight:700">${it.name}${it.note?' <span style="color:#8a7d6b;font-size:11px">'+it.note+'</span>':''}</td>
-            <td style="padding:8px 10px;text-align:center;font-size:14px;font-weight:800;color:#5b3e8f">${it.qty}</td>
-            <td style="padding:8px 10px;text-align:center"><div style="width:16px;height:16px;border:2px solid #ccc;border-radius:3px;margin:0 auto"></div></td>
-          </tr>`).join('')}
-        </table>
-      </div>`;
-    });
-  }
-  const html=`<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
-  <style>
-    body{font-family:Arial,sans-serif;background:#f5f0e8;margin:0;padding:16px;direction:rtl;color:#1a1410}
-    @media print{body{background:#fff;padding:0}}
-  </style>
-  </head><body>
-  <div style="max-width:560px;margin:0 auto">
-    <div style="background:linear-gradient(135deg,#5b3e8f,#7b5ea7);color:#fff;border-radius:12px;padding:18px 22px;margin-bottom:22px">
-      <h1 style="font-size:20px;font-weight:900;margin:0 0 4px">🛒 רשימת קניות</h1>
-      <p style="font-size:12px;opacity:.8;margin:0">${date} · ${need.length} מוצרים לרכישה</p>
-    </div>
-    ${body}
-    <div style="margin-top:22px;padding:12px;background:#f0ecfa;border-radius:10px;text-align:center">
-      <p style="font-size:11px;color:#8a7d6b;margin:0">נוצר ע"י אפליקציית קניות משפחתית · ${date}</p>
-    </div>
-  </div></body></html>`;
-
-  // שמירה כקובץ HTML שניתן לשתף ישירות
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `רשימת-קניות-${date.replace(/[,\s]+/g,'-')}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('📥 הקובץ הורד — פתחי ושתפי!');
+  if(!need.length){ showToast('🎉 אין מה לקנות השבוע!'); return; }
+  let msg=`🛒 *רשימת קניות* — ${date}\n━━━━━━━━━━━━━\n`;
+  Object.entries(groups).forEach(([cat,items])=>{
+    const n=items.filter(i=>i.status==='no');
+    if(!n.length) return;
+    msg+=`\n${cat}\n`;
+    n.forEach(it=>{ msg+=`▪️ ${it.name}`; if(it.qty>1)msg+=` × ${it.qty}`; if(it.note)msg+=` (${it.note})`; msg+='\n'; });
+  });
+  msg+=`\n━━━━━━━━━━━━━\nסה"כ ${need.length} מוצרים`;
+  if(navigator.share){
+    navigator.share({title:'רשימת קניות',text:msg}).catch(()=>openWA(msg));
+  } else { openWA(msg); }
 }
+function openWA(msg){ window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank'); showToast('📤 נפתח וואטסאפ!'); }
+function genPDF(){ shareList(); }
 let tt;
 function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2300);}
 render();updateProgress();
